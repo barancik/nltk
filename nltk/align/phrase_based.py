@@ -64,11 +64,11 @@ def extract(f_start, f_end, e_start, e_end,
     :param trglen: The number of tokens in the target language tokens.
     """
     if f_end < 0:  # 0-based indexing.
-        return {}
+        yield
     # Check if alignement points are consistent.
     for e,f in alignment:
         if ((f_start <= f <= f_end) and (e < e_start or e > e_end)):
-            return {}
+            yield
 
     # Add phrase pairs (incl. additional unaligned f)
     fs = f_start
@@ -193,6 +193,7 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
                               srctext, trgtext, srclen, trglen,
                               max_phrase_length, lexical_reorderings)
             for phrase in phrases:
-                yield phrase # yield phrase pairs BP
+                if phrase:
+                    yield phrase # yield phrase pairs BP
     
 
