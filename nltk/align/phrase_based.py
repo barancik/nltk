@@ -71,7 +71,6 @@ def extract(f_start, f_end, e_start, e_end,
             return {}
 
     # Add phrase pairs (incl. additional unaligned f)
-    phrases = set()
     fs = f_start
     while True:
         fe = min(f_end, f_start + max_phrase_length - 1)
@@ -81,8 +80,7 @@ def extract(f_start, f_end, e_start, e_end,
             src_phrase = " ".join(srctext[e_start:e_end+1])
             trg_phrase = " ".join(trgtext[fs:fe+1])
             # Include more data for later ordering.
-            phrases.add(((e_start, e_end+1), (f_start, f_end+1), 
-                         src_phrase, trg_phrase))
+            yield ((e_start, e_end+1), (f_start, f_end+1), src_phrase, trg_phrase)
             orientation = get_orientation(e_start, e_end, f_start, f_end, alignment)
             lexical_reorderings[(src_phrase,trg_phrase)][orientation]+=1
             fe += 1
@@ -93,7 +91,6 @@ def extract(f_start, f_end, e_start, e_end,
         # if fs is in word alignment or out-of-bounds
         if fs in f_aligned or fs < 0:
             break
-    return phrases
 
 def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
     """
@@ -114,8 +111,7 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
     >>> trgtext = "michael geht davon aus , dass er im haus bleibt"
     >>> alignment = [(0,0), (1,1), (1,2), (1,3), (2,5), (3,6), (4,9), 
     ... (5,9), (6,7), (7,7), (8,8)]
-    >>> phrases = phrase_extraction(srctext, trgtext, alignment)
-    >>> for i in sorted(phrases):
+    >>> for i in phrase_extraction(srctext, trgtext, alignment):
     ...    print(i)
     ...
     ((0, 1), (0, 1), 'michael', 'michael')
@@ -155,8 +151,8 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
     second elements are the target words' indices. This is also the output
     format of nltk/align/ibm1.py
     
-    :rtype: list(tuple)
-    :return: A list of tuples, each element in a list is a phrase and each 
+    :rtype: iterable(tuple)
+    :return: An iterable of tuples, each element in a list is a phrase and each 
     phrase is a tuple made up of (i) its source location, (ii) its target 
     location, (iii) the source phrase and (iii) the target phrase. The phrase
     list of tuples represents all the possible phrases extracted from the 
@@ -176,7 +172,7 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
     max_phrase_length = max_phrase_length or max(srclen,trglen)
     lexical_reorderings = defaultdict(Counter)
 
-    bp = set() # set of phrase pairs BP
+    
     # Index e_start from 0 to len(e) - 1
     for e_start in range(srclen):
         # Index e_end from e_start to len(e) - 1 or the length of maximum phrase
@@ -196,7 +192,7 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
                               alignment, f_aligned,
                               srctext, trgtext, srclen, trglen,
                               max_phrase_length, lexical_reorderings)
-            if phrases:
-                bp.update(phrases)
-    return bp, lexical_reorderings
+            for phrase in phrases:
+                yield phrase # yield phrase pairs BP
+    
 
