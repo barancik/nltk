@@ -6,9 +6,33 @@
 # URL: <http://nltk.org/>
 # For license information, see LICENSE.TXT
 
+from collections import Counter, defaultdict
+
+class LexicalReordering(object):
+    def __init__(self):
+       self.results = Counter()
+
+    def __str__(self):
+       total = float(sum([self.results[x] for x in self.results]))
+       string = "%f %f %f" % (self.results["monotonous"] / total,
+                              self.results["swap"] / total,
+                              self.results["discontinous"] / total)
+       return string
+
+
+def get_orientation(e_start, e_end, f_start, f_end, alignment):
+    if e_start == 0 and f_start == 0:
+         return "monotonous"
+    if (e_start-1,f_start-1) in alignment:
+         return "monotonous"
+    if (e_start-1,f_start+1)  in alignment:
+         return "swap"
+    return "discontinous"
+
 def extract(f_start, f_end, e_start, e_end, 
             alignment, f_aligned,
-            srctext, trgtext, srclen, trglen, max_phrase_length):
+            srctext, trgtext, srclen, trglen, max_phrase_length,
+            lexical_reorderings):
     """
     This function checks for alignment point consistency and extracts 
     phrases using the chunk of consistent phrases.
@@ -71,6 +95,8 @@ def extract(f_start, f_end, e_start, e_end,
             # Include more data for later ordering.
             phrases.add(((e_start, e_end+1), (f_start, f_end+1), 
                          src_phrase, trg_phrase))
+            orientation = get_orientation(e_start, e_end, f_start, f_end, alignment)
+            lexical_reorderings[(src_phrase,trg_phrase)].results[orientation]+=1
             fe += 1
             # if fe is in word alignment or out-of-bounds
             if fe in f_aligned or fe == trglen:
@@ -158,8 +184,9 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
     srclen = len(srctext)       # len(e)
     trglen = len(trgtext)       # len(f)
     # Keeps an index of which source/target words that are aligned.
-    f_aligned = [j for _,j in alignment]
+    f_aligned = [j for _,j in alignment] # THE OTHER WAY AROUND
     max_phrase_length = max_phrase_length or max(srclen,trglen)
+    lexical_reorderings = defaultdict(LexicalReordering)
 
     bp = set() # set of phrase pairs BP
     # Index e_start from 0 to len(e) - 1
@@ -180,8 +207,8 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
             phrases = extract(f_start, f_end, e_start, e_end, 
                               alignment, f_aligned,
                               srctext, trgtext, srclen, trglen,
-                              max_phrase_length)
+                              max_phrase_length, lexical_reorderings)
             if phrases:
                 bp.update(phrases)
-    return bp
+    return bp, lexical_reorderings
 
