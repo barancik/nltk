@@ -80,9 +80,9 @@ def extract(f_start, f_end, e_start, e_end,
             src_phrase = " ".join(srctext[e_start:e_end+1])
             trg_phrase = " ".join(trgtext[fs:fe+1])
             # Include more data for later ordering.
-            yield ((e_start, e_end+1), (f_start, f_end+1), src_phrase, trg_phrase)
             orientation = get_orientation(e_start, e_end, f_start, f_end, alignment)
             lexical_reorderings[(src_phrase,trg_phrase)][orientation]+=1
+            yield ((e_start, e_end+1), (f_start, f_end+1), src_phrase, trg_phrase)
             fe += 1
             # if fe is in word alignment or out-of-bounds
             if fe in f_aligned or fe == trglen:
@@ -194,6 +194,5 @@ def phrase_extraction(srctext, trgtext, alignment, max_phrase_length=0):
                               max_phrase_length, lexical_reorderings)
             for phrase in phrases:
                 if phrase:
-                    yield phrase # yield phrase pairs BP
-    
-
+                    lr = lexical_reorderings[(phrase[2],phrase[3])]
+                    yield phrase, lr["m"], lr["s"], lr["d"]# yield phrase pairs BP
